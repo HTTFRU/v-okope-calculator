@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Штаб & Калькуляторы — В окопе</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for military / arcade typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        trench: {
+                            bg: '#12100e',
+                            card: '#221e1a',
+                            border: '#443a31',
+                            gold: '#ffd15c',
+                            goldDark: '#c79720',
+                            accent: '#ff5500',
+                            green: '#486826',
+                            greenHover: '#5a8230',
+                            panel: '#2d2721'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['"Russo One"', 'sans-serif'],
+                        body: ['"Roboto Condensed"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #12100e;
+            background-image: 
+                radial-gradient(circle at 50% 15%, rgba(255, 140, 0, 0.08) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(72, 104, 38, 0.1) 0%, transparent 50%);
+            color: #e5e0d8;
+            font-family: 'Roboto Condensed', sans-serif;
+            user-select: none;
+        }
+
+        .font-heading {
+            font-family: 'Russo One', sans-serif;
+            letter-spacing: 0.5px;
+        }
+
+        /* Military panel styling */
+        .military-panel {
+            background: linear-gradient(145deg, #28221c, #1d1916);
+            border: 2px solid #4a3e33;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.7), 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .military-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border: 1px solid rgba(255, 208, 92, 0.15);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+
+        /* Custom Input styles */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* Custom ammo bullet icons */
+        .ammo-badge {
+            width: 52px;
+            height: 52px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.3), 0 3px 6px rgba(0,0,0,0.6);
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-action {
+            transition: all 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+        }
+        .btn-action:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+        }
+
+        /* Glow animation for damage */
+        @keyframes pulse-gold {
+            0%, 100% { text-shadow: 0 0 10px rgba(255, 209, 92, 0.5); }
+            50% { text-shadow: 0 0 25px rgba(255, 209, 92, 0.9), 0 0 5px #ff5500; }
+        }
+        .gold-glow {
+            animation: pulse-gold 2.5s infinite;
+        }
+
+        /* Tab active highlight */
+        .tab-active {
+            background-color: #2d2721;
+            color: #ffd15c;
+            border-color: #ffd15c;
+            box-shadow: 0 -4px 12px rgba(255, 209, 92, 0.15);
+        }
+
+        /* Scrollbar custom styling for log table */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #181410;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #4a3e33;
+            border-radius: 3px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #ffd15c;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between pb-32">
+
+    <!-- Header / Banner -->
+    <header class="w-full bg-trench-panel border-b-2 border-trench-border py-4 px-4 shadow-2xl relative z-10">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+            <div class="flex items-center gap-3">
+                <div class="bg-trench-gold/20 p-2.5 rounded-lg border border-trench-gold/40 text-trench-gold text-2xl">
+                    <i class="fa-solid fa-person-military-rifle"></i>
+                </div>
+                <div>
+                    <h1 class="font-heading text-xl md:text-2xl text-trench-gold uppercase tracking-wider">
+                        Штаб Боеприпасов и Талантов
+                    </h1>
+                    <p class="text-xs text-stone-400">Калькулятор боя и прокачки • Игра «В окопе»</p>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <div class="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-stone-800">
+                <button 
+                    id="tabBtnDamage" 
+                    onclick="switchTab('damage')" 
+                    class="tab-active btn-action px-4 py-2 rounded-lg font-heading text-xs uppercase tracking-wider border border-transparent transition flex items-center gap-2">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    <span>Расчет Урона</span>
+                </button>
+                <button 
+                    id="tabBtnTalents" 
+                    onclick="switchTab('talents')" 
+                    class="btn-action px-4 py-2 rounded-lg font-heading text-xs uppercase tracking-wider text-stone-400 border border-transparent hover:text-stone-200 transition flex items-center gap-2">
+                    <i class="fa-solid fa-star text-amber-400"></i>
+                    <span>Прокачка Талантов</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto w-full p-3 sm:p-6 flex-grow">
+
+        <!-- ================= TAB 1: DAMAGE CALCULATOR ================= -->
+        <section id="tabDamage" class="block">
+            
+            <!-- Header Controls for Damage Tab -->
+            <div class="military-panel rounded-xl p-4 mb-5 border-trench-border flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="bg-amber-500/20 p-2.5 rounded-lg border border-amber-500/30 text-amber-400 text-xl">
+                        <i class="fa-solid fa-cubes-stacked"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-heading text-stone-100 text-base uppercase">Склад Залпов</h2>
+                        <p class="text-xs text-stone-400">Укажите количество снарядов для подсчёта итогового урона</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap justify-center">
+                    <button onclick="setAllQuantities(1)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider">
+                        Все по 1
+                    </button>
+                    <button onclick="setAllQuantities(10)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 border border-stone-600 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider">
+                        Все по 10
+                    </button>
+                    <button onclick="restoreDefaultDamage()" class="btn-action bg-stone-800 hover:bg-stone-700 text-trench-gold border border-trench-gold/40 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider">
+                        Сброс базового урона
+                    </button>
+                    <button onclick="clearCounts()" class="btn-action bg-red-900/60 hover:bg-red-800/80 text-red-200 border border-red-700/60 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Очистить кол-во
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ammo Items Grid -->
+            <div id="ammoGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamic ammo cards inserted via JS -->
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 2: TALENT PROGRESSION CALCULATOR ================= -->
+        <section id="tabTalents" class="hidden">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Inputs and Summary Card (Left Column) -->
+                <div class="lg:col-span-5 flex flex-col gap-5">
+                    
+                    <!-- Input Controls Box -->
+                    <div class="military-panel rounded-xl p-5 border-trench-gold/40">
+                        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-stone-700/80">
+                            <div class="bg-amber-500/20 p-2.5 rounded-lg border border-amber-500/40 text-amber-400 text-xl">
+                                <i class="fa-solid fa-calculator"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-heading text-stone-100 text-lg uppercase">Расчёт Прокачки</h2>
+                                <p class="text-xs text-stone-400">Введите данные текущих талантов и урона</p>
+                            </div>
+                        </div>
+
+                        <!-- Form inputs -->
+                        <div class="space-y-4">
+                            <!-- Current Talents Field -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-stone-300 mb-1.5">
+                                    <i class="fa-solid fa-star text-amber-400 mr-1"></i> Текущее количество талантов (N):
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="changeTalentInput(-1)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 w-10 h-10 rounded-lg font-bold border border-stone-600">
+                                        -1
+                                    </button>
+                                    <input 
+                                        type="number" 
+                                        id="talentCurrentInput" 
+                                        value="10" 
+                                        min="0"
+                                        oninput="calculateTalentsProgression()"
+                                        class="flex-grow bg-stone-900 border-2 border-trench-gold/60 text-trench-gold font-heading text-center text-xl h-10 rounded-lg outline-none focus:ring-2 focus:ring-trench-gold"
+                                    />
+                                    <button onclick="changeTalentInput(1)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 w-10 h-10 rounded-lg font-bold border border-stone-600">
+                                        +1
+                                    </button>
+                                </div>
+                                <p class="text-[11px] text-stone-400 mt-1">
+                                    Следующий талант (<span id="nextTalentLevelLabel" class="text-amber-400 font-bold">11</span>-й) стоит: 
+                                    <span id="nextTalentCostLabel" class="text-trench-gold font-bold">1 100</span> урона
+                                </p>
+                            </div>
+
+                            <!-- Damage Pool Field -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-stone-300 mb-1.5">
+                                    <i class="fa-solid fa-burst text-amber-500 mr-1"></i> Имеющийся / вливаемый урон:
+                                </label>
+                                <input 
+                                    type="number" 
+                                    id="talentDamageInput" 
+                                    value="20000" 
+                                    min="0"
+                                    step="100"
+                                    oninput="calculateTalentsProgression()"
+                                    class="w-full bg-stone-900 border-2 border-stone-600 focus:border-trench-gold text-white font-heading text-center text-xl h-11 rounded-lg outline-none"
+                                />
+                                
+                                <!-- Quick Damage Insert Preset Buttons -->
+                                <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                                    <button onclick="setDamageInput(5000)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] px-2 py-1 rounded border border-stone-700">
+                                        5k
+                                    </button>
+                                    <button onclick="setDamageInput(20000)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] px-2 py-1 rounded border border-stone-700">
+                                        20k
+                                    </button>
+                                    <button onclick="setDamageInput(50000)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] px-2 py-1 rounded border border-stone-700">
+                                        50k
+                                    </button>
+                                    <button onclick="setDamageInput(100000)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] px-2 py-1 rounded border border-stone-700">
+                                        100k
+                                    </button>
+                                    <button onclick="useCalculatedDamage()" class="btn-action bg-amber-900/60 hover:bg-amber-800 text-amber-200 text-[11px] px-2 py-1 rounded border border-amber-600/60 ml-auto flex items-center gap-1">
+                                        <i class="fa-solid fa-right-left"></i> Взять из Калькулятора
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculated Result Summary Box -->
+                    <div class="military-panel rounded-xl p-5 border-trench-gold bg-gradient-to-b from-trench-card via-trench-panel to-trench-card">
+                        <h3 class="font-heading text-trench-gold text-sm uppercase mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-square-poll-vertical"></i> Результат Прокачки
+                        </h3>
+
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-2.5 rounded bg-black/40 border border-stone-800">
+                                <span class="text-xs text-stone-300">Новых куплено талантов:</span>
+                                <span id="resBoughtTalents" class="font-heading text-xl text-amber-400">+0</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-2.5 rounded bg-black/40 border border-stone-800">
+                                <span class="text-xs text-stone-300">Итоговый уровень таланта:</span>
+                                <span id="resFinalTalent" class="font-heading text-2xl text-trench-gold">10</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-2.5 rounded bg-black/40 border border-stone-800">
+                                <span class="text-xs text-stone-300">Потрачено урона:</span>
+                                <span id="resSpentDamage" class="font-bold text-stone-200">0</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-2.5 rounded bg-black/40 border border-stone-800">
+                                <span class="text-xs text-stone-300">Остаток урона (сдача):</span>
+                                <span id="resRemainingDamage" class="font-bold text-emerald-400">0</span>
+                            </div>
+
+                            <div class="p-3 rounded bg-amber-950/40 border border-amber-600/40 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-circle-exclamation text-amber-400"></i>
+                                    <span class="text-xs text-amber-200 font-bold">Не хватает до следующего:</span>
+                                </div>
+                                <span id="resNeededForNext" class="font-heading text-amber-400 text-lg">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- Detailed Calculation Log Table (Right Column) -->
+                <div class="lg:col-span-7">
+                    <div class="military-panel rounded-xl p-5 border-stone-700 h-full flex flex-col">
+                        
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-stone-700/80">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-trench-gold text-lg"></i>
+                                <h3 class="font-heading text-stone-100 text-base uppercase">Пошаговый Лог Списания</h3>
+                            </div>
+                            <span id="logStepCount" class="text-xs text-stone-400 bg-stone-800 px-2.5 py-1 rounded border border-stone-700">
+                                Шагов: 0
+                            </span>
+                        </div>
+
+                        <!-- Table Scroll Container -->
+                        <div class="flex-grow overflow-y-auto max-h-[480px] custom-scroll pr-1">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-black/60 text-stone-400 font-heading uppercase sticky top-0 border-b border-stone-700">
+                                    <tr>
+                                        <th class="p-2">№ / Талант</th>
+                                        <th class="p-2 text-right">Стоимость</th>
+                                        <th class="p-2 text-right">Остаток урона</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="talentLogTable" class="divide-y divide-stone-800 text-stone-300">
+                                    <!-- Log rows dynamically inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p class="text-[11px] text-stone-500 mt-3 pt-2 border-t border-stone-800">
+                            * Формула: каждый новый уровень таланта <span class="text-stone-300">N</span> стоит <span class="text-trench-gold font-bold">N × 100</span> урона.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Fixed Bottom Bar for Damage Calculator Tab -->
+    <footer id="damageFooter" class="fixed bottom-0 left-0 right-0 bg-trench-bg/95 backdrop-blur-md border-t-2 border-trench-gold/60 py-3 px-4 shadow-[0_-8px_25px_rgba(0,0,0,0.8)] z-50">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <div class="flex items-center gap-4 text-xs sm:text-sm text-stone-400">
+                <div>
+                    <span>Всего залпов:</span>
+                    <span id="totalShotsCount" class="font-bold text-stone-200 text-base ml-1">0</span>
+                </div>
+                <div class="h-4 w-px bg-stone-700"></div>
+                <div>
+                    <span>Видов снарядов:</span>
+                    <span id="activeTypesCount" class="font-bold text-stone-200 text-base ml-1">0 / 7</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                <div class="text-right">
+                    <div class="text-[10px] sm:text-xs uppercase font-bold text-stone-400 tracking-wider">Итоговый Урон Склады</div>
+                    <div id="grandTotalDamage" class="font-heading text-2xl sm:text-4xl text-trench-gold gold-glow leading-none">
+                        0
+                    </div>
+                </div>
+
+                <button onclick="switchTab('talents'); useCalculatedDamage();" class="btn-action bg-amber-600 hover:bg-amber-500 text-stone-900 font-heading px-3 py-2 rounded-lg text-xs flex items-center gap-2 border border-amber-400 uppercase tracking-wider font-bold">
+                    <span>Влить в Таланты</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+
+        </div>
+    </footer>
+
+
+    <!-- Logic Script -->
+    <script>
+        // Default ammo configuration
+        const DEFAULT_AMMO_DATA = [
+            { id: 'tracer', name: 'Залп трассирующими', baseDamage: 214, bgGradient: 'from-amber-200 to-amber-400', icon: 'fa-bolt-lightning', iconColor: '#b45309' },
+            { id: 'frag', name: 'Залп осколочными', baseDamage: 433, bgGradient: 'from-rose-200 to-amber-300', icon: 'fa-burst', iconColor: '#9a3412' },
+            { id: 'explosive', name: 'Залп разрывными', baseDamage: 1292, bgGradient: 'from-yellow-200 to-yellow-500', icon: 'fa-volcano', iconColor: '#854d0e' },
+            { id: 'incendiary', name: 'Залп зажигательными', baseDamage: 2165, bgGradient: 'from-orange-300 to-red-500', icon: 'fa-fire-flame-curved', iconColor: '#c2410c' },
+            { id: 'he', name: 'Залп фугасными', baseDamage: 3460, bgGradient: 'from-stone-300 to-stone-500', icon: 'fa-bomb', iconColor: '#292524' },
+            { id: 'ap', name: 'Залп бронебойными', baseDamage: 8638, bgGradient: 'from-slate-200 to-sky-400', icon: 'fa-shield-halved', iconColor: '#0369a1' },
+            { id: 'heat', name: 'Залп кумулятивными', baseDamage: 17968, bgGradient: 'from-emerald-200 to-teal-400', icon: 'fa-rocket', iconColor: '#0f766e' }
+        ];
+
+        let ammoState = [];
+        let currentCalculatedTotalDamage = 0;
+
+        // Number formatter with spaces
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        // Tab Switching Logic
+        function switchTab(tab) {
+            const damageTab = document.getElementById('tabDamage');
+            const talentsTab = document.getElementById('tabTalents');
+            const btnDamage = document.getElementById('tabBtnDamage');
+            const btnTalents = document.getElementById('tabBtnTalents');
+            const damageFooter = document.getElementById('damageFooter');
+
+            if (tab === 'damage') {
+                damageTab.classList.remove('hidden');
+                damageTab.classList.add('block');
+                talentsTab.classList.remove('block');
+                talentsTab.classList.add('hidden');
+
+                btnDamage.classList.add('tab-active');
+                btnDamage.classList.remove('text-stone-400');
+                btnTalents.classList.remove('tab-active');
+                btnTalents.classList.add('text-stone-400');
+
+                damageFooter.classList.remove('hidden');
+            } else {
+                talentsTab.classList.remove('hidden');
+                talentsTab.classList.add('block');
+                damageTab.classList.remove('block');
+                damageTab.classList.add('hidden');
+
+                btnTalents.classList.add('tab-active');
+                btnTalents.classList.remove('text-stone-400');
+                btnDamage.classList.remove('tab-active');
+                btnDamage.classList.add('text-stone-400');
+
+                damageFooter.classList.add('hidden');
+                calculateTalentsProgression();
+            }
+        }
+
+        // Initial setup
+        function initData() {
+            ammoState = DEFAULT_AMMO_DATA.map(item => ({
+                ...item,
+                damage: item.baseDamage,
+                count: 0
+            }));
+        }
+
+        // Render Cards for Ammo Calculator
+        function renderCards() {
+            const container = document.getElementById('ammoGrid');
+            container.innerHTML = '';
+
+            ammoState.forEach((ammo, index) => {
+                const totalItemDamage = ammo.damage * ammo.count;
+
+                const card = document.createElement('div');
+                card.className = `military-panel rounded-xl p-4 flex flex-col justify-between gap-3 transition-all ${ammo.count > 0 ? 'border-trench-gold/60 ring-1 ring-trench-gold/30' : ''}`;
+
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="ammo-badge bg-gradient-to-br ${ammo.bgGradient} border border-white/40">
+                            <i class="fa-solid ${ammo.icon} text-2xl" style="color: ${ammo.iconColor};"></i>
+                        </div>
+
+                        <div class="flex-grow min-w-0">
+                            <h3 class="font-heading text-stone-100 text-sm sm:text-base leading-snug truncate" title="${ammo.name}">
+                                ${ammo.name}
+                            </h3>
+                            
+                            <div class="flex items-center gap-1.5 mt-1.5 text-xs text-stone-400">
+                                <span>Урон за 1 шт:</span>
+                                <input 
+                                    type="number" 
+                                    min="0"
+                                    value="${ammo.damage}" 
+                                    onchange="updateDamage(${index}, this.value)"
+                                    class="w-20 bg-stone-900 border border-stone-700 focus:border-trench-gold text-trench-gold font-bold px-1.5 py-0.5 rounded text-xs text-center outline-none transition"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 p-2 rounded-lg border border-stone-800/80 flex items-center justify-between gap-2">
+                        <span class="text-xs uppercase font-bold text-stone-400 pl-1">Кол-во:</span>
+                        
+                        <div class="flex items-center gap-1">
+                            <button onclick="changeCount(${index}, -10)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 w-7 h-7 rounded font-bold text-xs flex items-center justify-center border border-stone-600">
+                                -10
+                            </button>
+                            <button onclick="changeCount(${index}, -1)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 w-7 h-7 rounded font-bold text-xs flex items-center justify-center border border-stone-600">
+                                -1
+                            </button>
+                            
+                            <input 
+                                type="number" 
+                                min="0" 
+                                value="${ammo.count}" 
+                                oninput="setCount(${index}, this.value)"
+                                class="w-14 bg-stone-900 border border-stone-700 focus:border-trench-gold text-white font-heading text-center py-1 rounded text-sm outline-none"
+                            />
+
+                            <button onclick="changeCount(${index}, 1)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 w-7 h-7 rounded font-bold text-xs flex items-center justify-center border border-stone-600">
+                                +1
+                            </button>
+                            <button onclick="changeCount(${index}, 10)" class="btn-action bg-stone-800 hover:bg-stone-700 text-stone-300 w-7 h-7 rounded font-bold text-xs flex items-center justify-center border border-stone-600">
+                                +10
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 border-t border-stone-800/80 text-xs">
+                        <span class="text-stone-400">Суммарный урон:</span>
+                        <span class="font-heading text-base ${totalItemDamage > 0 ? 'text-trench-gold' : 'text-stone-500'}">
+                            ${formatNumber(totalItemDamage)}
+                        </span>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            calculateGrandTotal();
+        }
+
+        function changeCount(index, delta) {
+            ammoState[index].count = Math.max(0, ammoState[index].count + delta);
+            renderCards();
+        }
+
+        function setCount(index, value) {
+            const parsed = parseInt(value) || 0;
+            ammoState[index].count = Math.max(0, parsed);
+            calculateGrandTotal();
+            
+            const cards = document.getElementById('ammoGrid').children;
+            if (cards[index]) {
+                const totalItemDamage = ammoState[index].damage * ammoState[index].count;
+                const totalSpan = cards[index].querySelector('.border-t .font-heading');
+                if (totalSpan) {
+                    totalSpan.textContent = formatNumber(totalItemDamage);
+                    totalSpan.className = `font-heading text-base ${totalItemDamage > 0 ? 'text-trench-gold' : 'text-stone-500'}`;
+                }
+            }
+        }
+
+        function updateDamage(index, value) {
+            ammoState[index].damage = Math.max(0, parseInt(value) || 0);
+            renderCards();
+        }
+
+        function setAllQuantities(val) {
+            ammoState.forEach(item => item.count = val);
+            renderCards();
+        }
+
+        function clearCounts() {
+            ammoState.forEach(item => item.count = 0);
+            renderCards();
+        }
+
+        function restoreDefaultDamage() {
+            ammoState.forEach((item, idx) => {
+                item.damage = DEFAULT_AMMO_DATA[idx].baseDamage;
+            });
+            renderCards();
+        }
+
+        function calculateGrandTotal() {
+            let totalDamage = 0;
+            let totalShots = 0;
+            let activeTypes = 0;
+
+            ammoState.forEach(item => {
+                const itemTotal = item.damage * item.count;
+                totalDamage += itemTotal;
+                totalShots += item.count;
+                if (item.count > 0) activeTypes++;
+            });
+
+            currentCalculatedTotalDamage = totalDamage;
+            document.getElementById('grandTotalDamage').textContent = formatNumber(totalDamage);
+            document.getElementById('totalShotsCount').textContent = formatNumber(totalShots);
+            document.getElementById('activeTypesCount').textContent = `${activeTypes} / ${ammoState.length}`;
+        }
+
+
+        // ================= TALENT PROGRESSION LOGIC =================
+
+        function changeTalentInput(delta) {
+            const input = document.getElementById('talentCurrentInput');
+            const newVal = Math.max(0, (parseInt(input.value) || 0) + delta);
+            input.value = newVal;
+            calculateTalentsProgression();
+        }
+
+        function setDamageInput(value) {
+            document.getElementById('talentDamageInput').value = value;
+            calculateTalentsProgression();
+        }
+
+        function useCalculatedDamage() {
+            document.getElementById('talentDamageInput').value = currentCalculatedTotalDamage;
+            calculateTalentsProgression();
+        }
+
+        // CORE TALENT PROGRESSION ALGORITHM
+        function calculateTalentsProgression() {
+            const initialTalents = Math.max(0, parseInt(document.getElementById('talentCurrentInput').value) || 0);
+            const initialDamage = Math.max(0, parseInt(document.getElementById('talentDamageInput').value) || 0);
+
+            let currentTalents = initialTalents;
+            let remainingDamage = initialDamage;
+            let totalSpentDamage = 0;
+            let boughtCount = 0;
+
+            const logRows = [];
+
+            // Next talent preview labels
+            const nextTalentNumber = currentTalents + 1;
+            const nextTalentCost = nextTalentNumber * 100;
+            document.getElementById('nextTalentLevelLabel').textContent = nextTalentNumber;
+            document.getElementById('nextTalentCostLabel').textContent = formatNumber(nextTalentCost);
+
+            // Step-by-step calculation loop
+            while (true) {
+                const targetTalent = currentTalents + 1;
+                const costForNext = targetTalent * 100;
+
+                if (remainingDamage >= costForNext) {
+                    remainingDamage -= costForNext;
+                    totalSpentDamage += costForNext;
+                    currentTalents = targetTalent;
+                    boughtCount++;
+
+                    logRows.push({
+                        step: boughtCount,
+                        talentLevel: currentTalents,
+                        cost: costForNext,
+                        remaining: remainingDamage
+                    });
+                } else {
+                    break;
+                }
+            }
+
+            // Calculations for next talent requirements
+            const neededForNextTalentCost = (currentTalents + 1) * 100;
+            const missingForNext = neededForNextTalentCost - remainingDamage;
+
+            // Render summary UI
+            document.getElementById('resBoughtTalents').textContent = `+${boughtCount}`;
+            document.getElementById('resFinalTalent').textContent = currentTalents;
+            document.getElementById('resSpentDamage').textContent = formatNumber(totalSpentDamage);
+            document.getElementById('resRemainingDamage').textContent = formatNumber(remainingDamage);
+            document.getElementById('resNeededForNext').textContent = formatNumber(missingForNext);
+            document.getElementById('logStepCount').textContent = `Шагов: ${boughtCount}`;
+
+            // Render Log Table
+            const tableBody = document.getElementById('talentLogTable');
+            tableBody.innerHTML = '';
+
+            if (logRows.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="p-4 text-center text-stone-500 italic">
+                            Урона не хватает даже на 1 следующий талант (нужно ${formatNumber(nextTalentCost)})
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            logRows.forEach((row, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = idx % 2 === 0 ? 'bg-black/20 hover:bg-stone-800/40' : 'bg-transparent hover:bg-stone-800/40';
+                tr.innerHTML = `
+                    <td class="p-2 font-bold text-amber-400">
+                        #${row.step} → <span class="text-stone-100">${row.talentLevel}-й талант</span>
+                    </td>
+                    <td class="p-2 text-right font-bold text-stone-300">
+                        -${formatNumber(row.cost)}
+                    </td>
+                    <td class="p-2 text-right text-emerald-400 font-bold">
+                        ${formatNumber(row.remaining)}
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // App Initialization
+        window.onload = function() {
+            initData();
+            renderCards();
+            calculateTalentsProgression();
+        };
+    </script>
+</body>
+</html>
